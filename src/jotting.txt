@@ -1,0 +1,249 @@
+
+//moving object to the right continously/ START//
+
+import "./styles.css";
+import { useRef } from "react";
+import {
+  motion,
+  useScroll,
+  useSpring,
+  useTransform,
+  useMotionValue,
+  useVelocity,
+  useAnimationFrame
+} from "framer-motion";
+import { wrap } from "@motionone/utils";
+
+interface ParallaxProps {
+  children: string;
+  baseVelocity: number;
+}
+
+function ParallaxText({ children, baseVelocity = 100 }: ParallaxProps) {
+  const baseX = useMotionValue(0);
+  const { scrollY } = useScroll();
+  const scrollVelocity = useVelocity(scrollY);
+  const smoothVelocity = useSpring(scrollVelocity, {
+    damping: 50,
+    stiffness: 400,
+    duration: 0.3
+  });
+  const velocityFactor = useTransform(smoothVelocity, [0, 1000], [0, 5], {
+    clamp: false
+  });
+  const x = useTransform(baseX, (v) => `${wrap(-20, -45, v)}%`);
+
+  const directionFactor = useRef<number>(1);
+  const prevT = useRef<number>(0);
+  useAnimationFrame((t) => {
+    if (!prevT.current) prevT.current = t;
+
+    const timeDelta = t - prevT.current;
+    let moveBy = directionFactor.current * baseVelocity * (timeDelta / 1000);
+
+    /**
+     * This is what changes the direction of the scroll once we
+     * switch scrolling directions.
+     */
+    if (velocityFactor.get() < 0) {
+      directionFactor.current = -1;
+    } else if (velocityFactor.get() > 0) {
+      directionFactor.current = 1;
+    }
+
+    moveBy += directionFactor.current * moveBy * velocityFactor.get();
+
+    baseX.set(baseX.get() + moveBy);
+
+    prevT.current = t;
+  });
+
+  /**
+   * The number of times to repeat the child text should be dynamically calculated
+   * based on the size of the text and viewport. Likewise, the x motion value is
+   * currently wrapped between -20 and -45% - this 25% is derived from the fact
+   * we have four children (100% / 4). This would also want deriving from the
+   * dynamically generated number of children.
+   */
+  return (
+    <div className="parallax">
+      <motion.div className="scroller" style={{ x }}>
+        <span>{children} </span>
+        <span>{children} </span>
+        <span>{children} </span>
+        <span>{children} </span>
+      </motion.div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <section>
+      <div></div>
+      <ParallaxText baseVelocity={5}>Framer Motion</ParallaxText>
+      {/* <ParallaxText baseVelocity={5}>Scroll velocity</ParallaxText> */}
+    </section>
+  );
+}
+
+
+//END//
+
+
+//On Scroll To Enlarge on Scroll// 
+
+// const { scrollYProgress } = useViewportScroll()
+// const scale = useTransform(scrollYProgress, [0, 1], [0.2, 2]);
+  
+// return (
+//   <motion.div
+//     style={{ scale }}
+//   >
+//     <motion.div
+//       style={{
+//         scaleY: scrollYProgress
+//       }}
+//     />
+//   </motion.div>
+// )
+
+//TO SHOW AND FADE ON SCROLL //
+import { animate, scroll } from "motion";
+
+document.querySelectorAll("section > div").forEach((item) => {
+  scroll(animate(item, { opacity: [0, 1, 1, 0] }), {
+    target: item,
+    offset: ["start end", "end end", "start start", "end start"]
+  });
+});
+
+// HTML //
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Motion One: Element-based scroll progress demo</title>
+    <meta charset="UTF-8" />
+    <link href="src/styles.css" rel="stylesheet" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <article>
+      <section>
+        <div><img src="/public/1.jpg" /></div>
+      </section>
+      <section>
+        <div><img src="/public/2.jpg" /></div>
+      </section>
+      <section>
+        <div><img src="/public/3.jpg" /></div>
+      </section>
+      <section>
+        <div><img src="/public/4.jpg" /></div>
+      </section>
+      <section>
+        <div><img src="/public/5.jpg" /></div>
+      </section>
+    </article>
+    <script src="src/index.js"></script>
+  </body>
+</html>
+//END//
+
+//DELAY ON SCROLL TO THE LEFT //
+import { animate, scroll } from "motion";
+
+const items = document.querySelectorAll("li");
+
+// Animate gallery horizontally during vertical scroll
+scroll(
+  animate("ul", {
+    transform: ["none", `translateX(-${items.length - 1}00vw)`]
+  }),
+  { target: document.querySelector("section") }
+);
+
+// Progress bar representing gallery scroll
+scroll(animate(".progress", { scaleX: [0, 1] }), {
+  target: document.querySelector("section")
+});
+
+// Image title parallax
+const segmentLength = 1 / items.length;
+items.forEach((item, i) => {
+  const header = item.querySelector("h2");
+
+  scroll(animate(header, { x: [200, -200] }), {
+    target: document.querySelector("section"),
+    offset: [
+      [i * segmentLength, 1],
+      [(i + 1) * segmentLength, 0]
+    ]
+  });
+});
+
+......HTML.....
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Motion One: Element-based scroll progress demo</title>
+    <meta charset="UTF-8" />
+    <link href="src/styles.css" rel="stylesheet" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <article>
+      <header><h1>Lines of London</h1></header>
+      <section>
+        <ul>
+          <li>
+            <img src="/public/1.jpg" />
+            <h2>#001</h2>
+          </li>
+          <li>
+            <img src="/public/2.jpg" />
+            <h2>#002</h2>
+          </li>
+          <li>
+            <img src="/public/3.jpg" />
+            <h2>#003</h2>
+          </li>
+          <li>
+            <img src="/public/4.jpg" />
+            <h2>#004</h2>
+          </li>
+          <li>
+            <img src="/public/5.jpg" />
+            <h2>#005</h2>
+          </li>
+        </ul>
+      </section>
+      <footer>
+        <p>
+          Photos by
+          <a target="_blank" href="https://twitter.com/mattgperry"
+            >Matt Perry</a
+          >
+        </p>
+      </footer>
+    </article>
+    <div class="progress"></div>
+    <script src="src/index.js"></script>
+  </body>
+</html>
+//
